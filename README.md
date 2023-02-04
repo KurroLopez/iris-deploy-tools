@@ -25,7 +25,7 @@ git clone https://github.com/KurroLopez/iris-deploy-tools.git .\iris-deploy-tool
 ```
 
 - Create a namespace with ***Enable namespace for interoperability productions*** checked.
-- Download iris-deploy-tools.xml from Release folder
+- Download [iris-deploy-tools.xml](https://github.com/KurroLopez/iris-deploy-tools/blob/master/Release/iris-deploy-tools.xml) from Release folder
 - Install it by terminal or import directly in manager portal Classes
 
 ```objectscript
