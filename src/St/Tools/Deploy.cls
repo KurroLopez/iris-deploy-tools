@@ -5,9 +5,6 @@ Class St.Tools.Deploy
 /// Name of the production by default
 Parameter PRODUCTION;
 
-/// Namespace name
-Parameter NAMESPACE;
-
 /// Add an item in a production
 /// <ul>
 /// <li><var>pProduction</var> Name of production.</li>
@@ -19,7 +16,7 @@ Parameter NAMESPACE;
 /// <li><var>pPoolSize</var> Pool size.</li>
 /// <li><var>pComment</var> Comment.</li>
 /// </ul>
-/// <example>Do myClass.AddItem("Item1","myPath.MyClass","Internal")</example>
+/// <example>Do myClass.AddItem("production", "Item1","myPath.MyClass","Internal")</example>
 ClassMethod AddItem(pProduction As %String = "", pName As %String, pClassName As %String, pCategory As %String = "", pEnabled As %Boolean = 1, pLogTraceEvents As %Boolean = 1, pPoolSize As %Integer = 1, pComment As %String = "") As %Status
 {
     Set ret = $$$OK
@@ -75,8 +72,8 @@ ClassMethod AddItem(pProduction As %String = "", pName As %String, pClassName As
 /// <li><var>pProduction</var> Name of production.</li>
 /// <li><var>pName</var> Name of the item to remove. Mandatory.</li>
 /// </ul>
-/// <example>Do myClass.RemoveItem("Item1")</example>
-ClassMethod RemoveItem(pProduction AS %String = "", pName As %String) As %Status
+/// <example>Do myClass.RemoveItem("production", "Item1")</example>
+ClassMethod RemoveItem(pProduction As %String = "", pName As %String) As %Status
 {
     Set ret = $$$OK
     if pProduction = "" set pProduction = ..#PRODUCTION
@@ -128,13 +125,13 @@ ClassMethod RemoveItem(pProduction AS %String = "", pName As %String) As %Status
 /// </ul>
 /// <example>
 /// /// Add new default setting for the current production
-/// Do myClass.AddDefaultSetting("Host.RS.Rest",,"Port","21")
+/// Do myClass.AddDefaultSetting("production", "Host.RS.Rest",,"Port","21")
 /// // Will be: CurrentProduction||Host.RS.Rest||*||Port --> 21
 /// /// Add new default setting for all productions.
-/// Do myClass.AddDefaultSetting("Host.RS.Rest",,"Port","21",1)
+/// Do myClass.AddDefaultSetting(,"Host.RS.Rest",,"Port","21",1)
 /// // Will be: *||Host.RS.Rest||*||Port --> 21
 /// </example>
-ClassMethod AddDefaultSetting(pProduction AS %String = "", pItemName As %String = "*", pHostClass As %String = "*", pSettingName As %String, pSettingValue As %String, pAllProduction As %Boolean = 0) As %Status
+ClassMethod AddDefaultSetting(pProduction As %String = "", pItemName As %String = "*", pHostClass As %String = "*", pSettingName As %String, pSettingValue As %String, pAllProduction As %Boolean = 0) As %Status
 {
     Set ret = $$$OK
     if pProduction = "" set pProduction = ..#PRODUCTION
@@ -197,8 +194,8 @@ ClassMethod AddDefaultSetting(pProduction AS %String = "", pItemName As %String 
 /// <li><var>pSettingName</var> Setting name to remove.</li>
 /// <li><var>pAllProduction</var> Set if apply this default value for all productions o just for the defined production. Default value: all productions (*).</li>
 /// </ul>
-/// <example>Do myClass.RemoveDefaultSetting("Host.RS.Rest",,"Port")</example>
-ClassMethod RemoveDefaultSetting(pProduction AS %String = "", pItemName As %String = "*", pHostClass As %String = "*", pSettingName As %String, pAllProduction As %Boolean = 0) As %Status
+/// <example>Do myClass.RemoveDefaultSetting("production", "Host.RS.Rest",,"Port")</example>
+ClassMethod RemoveDefaultSetting(pProduction As %String = "", pItemName As %String = "*", pHostClass As %String = "*", pSettingName As %String, pAllProduction As %Boolean = 0) As %Status
 {
     Set ret = $$$OK
     if pProduction = "" set pProduction = ..#PRODUCTION

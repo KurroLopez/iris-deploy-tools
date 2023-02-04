@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="26" zv="IRIS for Windows (x86-64) 2021.1 (Build 215U)" ts="2023-02-03 19:14:48">
+<Class name="St.Tools.Deploy">
+<Description><![CDATA[
+Utils for deploy your production.<br>]]></Description>
+<TimeChanged>66508,69185.72425</TimeChanged>
+<TimeCreated>66508,69185.72425</TimeCreated>
+
+<Parameter name="PRODUCTION">
+<Description>
+Name of the production by default</Description>
+</Parameter>
+
+<Parameter name="NAMESPACE">
+<Description>
+Namespace name</Description>
+</Parameter>
+
+<Method name="AddItem">
+<Description><![CDATA[
+Add an item in a production
+<ul>
+<li><var>pProduction</var> Name of production.</li>
+<li><var>pName</var> Name of item. Mandatory.</li>
+<li><var>pClassName</var> Classname of the item. Mandatory.</li>
+<li><var>pCategory</var> Category of the item in the production.</li>
+<li><var>pEnable</var> Set enable item.</li>
+<li><var>pLogTraceEvents</var> Set enable trace events.</li>
+<li><var>pPoolSize</var> Pool size.</li>
+<li><var>pComment</var> Comment.</li>
+</ul>
+<example>Do myClass.AddItem("Item1","myPath.MyClass","Internal")</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pProduction:%String="",pName:%String,pClassName:%String,pCategory:%String="",pEnabled:%Boolean=1,pLogTraceEvents:%Boolean=1,pPoolSize:%Integer=1,pComment:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    if pProduction = "" set pProduction = ..#PRODUCTION
+    Try {
+        // Check mandatory values
+        If ((pName '="") && (pClassName '=""))
+        {
+            If '##class(Ens.Config.Item).NameExists(pProduction,pName,.idItem)
+            {
+                Set production = ##class(Ens.Config.Production).%OpenId(pProduction)
+                Write !,"Installing "_pName
+                Set objItem = ##class(Ens.Config.Item).%New()
+                Set objItem.Name = pName
+                Set objItem.ClassName = pClassName
+                Set objItem.Enabled = pEnabled
+                Set objItem.LogTraceEvents = pLogTraceEvents
+                Set objItem.Category = pCategory
+                Set objItem.PoolSize = pPoolSize
+                Set objItem.Comment = pComment
+
+                Do production.Items.Insert(objItem)
+                Set st = production.%Save()
+                Kill objItem
+                Do ##class(Ens.Director).RestartProduction(0,1)
+                Write !,"Item "_pName_" installed."
+            }
+            Else 
+            {
+                Write !,"Item "_pName_" already exists."
+            }
+
+        }
+        Else 
+        {
+            If (pName = "") set attrib = "pName"
+            If (pClassName ="") set attrib = "pClassName" 
+
+            $$$ThrowOnError($System.Status.Error(406,attrib))
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="RemoveItem">
+<Description><![CDATA[
+Remove an item in the production.
+<ul>
+<li><var>pProduction</var> Name of production.</li>
+<li><var>pName</var> Name of the item to remove. Mandatory.</li>
+</ul>
+<example>Do myClass.RemoveItem("Item1")</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pProduction:%String="",pName:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    if pProduction = "" set pProduction = ..#PRODUCTION
+    Try {
+
+        // Check mandatory values
+        If (pName '="")
+        {
+            If ##class(Ens.Config.Item).NameExists(pProduction,pName,.idItem)
+            {
+                Set production = ##class(Ens.Config.Production).%OpenId(pProduction)
+                Write !,"Removing "_pName
+                Set objItem = production.FindItemByConfigName(pName)
+                Do production.RemoveItem(objItem)
+                Set st = production.%Save()
+                Kill objItem
+                Do ##class(Ens.Director).RestartProduction(0,1)
+                Write !,"Item "_pName_" removed"
+            } 
+            Else 
+            {
+                Write !,"Item "_pName_" not found."
+            }
+        }
+        Else 
+        {
+            If (pName = "") set attrib = "pName"
+
+            $$$ThrowOnError($System.Status.Error(406,attrib))
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="AddDefaultSetting">
+<Description><![CDATA[
+Insert or update a default value
+<ul>
+<li><var>pProduction</var> Name of production.</li>
+<li><var>pItemName</var> Name of the item.</li>
+<li><var>pHostClass</var> Name of class.</li>
+<li><var>pSettingName</var> Setting name.</li>
+<li><var>pSettingValue</var> Setting value.</li>
+<li><var>pAllProduction</var> Set if apply this default value for all productions o just for the defined production. Default value: all productions (*).</li>
+</ul>
+<example>
+/// Add new default setting for the current production
+Do myClass.AddDefaultSetting("Host.RS.Rest",,"Port","21")
+// Will be: CurrentProduction||Host.RS.Rest||*||Port --> 21
+/// Add new default setting for all productions.
+Do myClass.AddDefaultSetting("Host.RS.Rest",,"Port","21",1)
+// Will be: *||Host.RS.Rest||*||Port --> 21
+</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pProduction:%String="",pItemName:%String="*",pHostClass:%String="*",pSettingName:%String,pSettingValue:%String,pAllProduction:%Boolean=0</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    if pProduction = "" set pProduction = ..#PRODUCTION
+    Try {
+
+        // Check mandatory values
+        If (pSettingName '="")
+        {
+            Set template = "%1||%2||%3||%4"
+            if pAllProduction
+            {
+                set production = "*"
+            }
+            else
+            {
+                set production = pProduction
+            }
+            Set configId = ##class(%Library.MessageDictionary).FormatText(template,production, pItemName, pHostClass, pSettingName)
+            If '##class(Ens.Config.DefaultSettings).%ExistsId(configId)
+			{
+                Set conf = ##class(Ens.Config.DefaultSettings).%New()
+                Write !,"Create new config "_configId
+            }
+            Else
+			{
+                Set conf = ##class(Ens.Config.DefaultSettings).%OpenId(configId)
+                Write !,"Update config "_configId
+            }
+
+            Set conf.ProductionName = production
+            Set conf.ItemName = pItemName
+            Set conf.HostClassName = pHostClass
+            Set conf.SettingName = pSettingName
+            Set conf.SettingValue = pSettingValue
+            Set conf.Deployable = 1
+
+            Do conf.%Save()
+            Kill conf
+        }
+        Else 
+        {
+            If (pSettingName = "") set attrib = "pSettingName"
+            $$$ThrowOnError($System.Status.Error(406,attrib))
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="RemoveDefaultSetting">
+<Description><![CDATA[
+Remove a default value
+<ul>
+<li><var>pProduction</var> Name of production.</li>
+<li><var>pItemName</var> Item name to remove.</li>
+<li><var>pHostClass</var> Host classname to remove.</li>
+<li><var>pSettingName</var> Setting name to remove.</li>
+<li><var>pAllProduction</var> Set if apply this default value for all productions o just for the defined production. Default value: all productions (*).</li>
+</ul>
+<example>Do myClass.RemoveDefaultSetting("Host.RS.Rest",,"Port")</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pProduction:%String="",pItemName:%String="*",pHostClass:%String="*",pSettingName:%String,pAllProduction:%Boolean=0</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    if pProduction = "" set pProduction = ..#PRODUCTION
+    Try {
+
+        // Check mandatory values
+        If (pSettingName '="")
+        {
+            Set template = "%1||%2||%3||%4"
+            if pAllProduction
+            {
+                set production = "*"
+            }
+            else
+            {
+                set production = pProduction
+            }
+            Set configId = ##class(%Library.MessageDictionary).FormatText(template,production, pItemName, pHostClass, pSettingName)
+
+            If ##class(Ens.Config.DefaultSettings).%ExistsId(configId)
+			{
+                Do ##class(Ens.Config.DefaultSettings).%DeleteId(configId)
+            }
+            Else
+			{
+                Write !,"Configure parameter not found ["_configId_"]"
+            }
+        }
+        Else 
+        {
+            If (pSettingName = "") set attrib = "pSettingName"
+
+            $$$ThrowOnError($System.Status.Error(406,attrib))
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="RegisterWebApplication">
+<Description><![CDATA[
+Register a web application. Configurate a service that doesn't need a special configuration.
+<ul>
+<li><var>pNameSpace</var> Name of namespace to run the web application. Mandatory.</li>
+<li><var>pName</var> Name of web application to create/update. Mandatory.</li>
+<li><var>pClassName</var> Name of class to run the web application. Mandatory.</li>
+<li><var>pDescription</var> Description of the web application.</li>
+<li><var>pRoles</var> Roles used in web application. Default %All</li>
+</ul>
+<example>
+// Add web api
+Do myClass.RegisterWebApplication("SAMPLES","/myApp/api","Host.RS.Rest","This is my api rest")</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pNameSpace:%String,pName:%String,pClassName:%String,pDescription:%String="",pRoles:%String="%All"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    New $Namespace
+    Set $Namespace = "%SYS"
+    Set ret = $$$OK
+    Set spec("AutheEnabled") = $$$AutheUnauthenticated
+    Set spec("NameSpace") = pNameSpace
+    Set spec("Description") = pDescription
+    Set spec("IsNameSpaceDefault") = $$$NO
+    Set spec("DispatchClass") = pClassName
+    Set spec("MatchRoles")=":"_pRoles
+
+    If ('##class(Security.Applications).Exists(pName)) {
+        Write !,"Creating Web application """_pName_"""..."
+        Set ret = ##class(Security.Applications).Create(pName, .spec)
+        Write !, "Web application """_pName_""" is created."
+    }
+    Else { // ensure configuration matches in case of updating from old terminal versions
+        Write !, "Updating web application """_pName_"""..."
+        Set ret = ##class(Security.Applications).Modify(pName, .spec)
+        Write !, "Web application """_pName_""" is updated."
+    }
+    Return ret
+]]></Implementation>
+</Method>
+
+<Method name="RemoveWebApplication">
+<Description><![CDATA[
+Remove a web application.
+<ul>
+<li><var>pName</var> Name of web application to remove. Mandatory.</li>
+<li><var>pClassName</var> Name of classname of web application. Mandatory.</li>
+</ul>
+<example>
+// Remove web api
+Do myClass.RemoveWebApplication("/myApp/api","Host.RS.Rest")</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pName:%String,pClassName:%String</FormalSpec>
+<Implementation><![CDATA[
+    New $Namespace
+    Set $Namespace = "%SYS"
+    Set ret = $$$OK
+    If (##class(Security.Applications).Exists(pName)) {
+        Do ##class(Security.Applications).Get(pName, .props)
+        If (props("DispatchClass") '= pClassName) {
+            Write !, "Web application doesn't refer to DispatchClass "_pClassName
+        }
+        Else {
+            Write !, "Deleting Web application """_pName_"""..."
+            Set ret = ##class(Security.Applications).Delete(pName)
+            Write !, "Web application """_pName_""" was successfully deleted."
+        }
+    }
+    Return ret
+]]></Implementation>
+</Method>
+
+<Method name="AddLookupTable">
+<Description><![CDATA[
+Add a value into a lookup table. If it exists, replace the value. If doesn't exist the table name, it'll be created in this moment.
+<ul>
+<li><var>pList</var> List of values to include. Each item should be a <b>$Listbuild</b> that include:</li>
+<ul>
+<li>Table</li>
+<li>Field</li>
+<li>Value</li>
+</ul>
+</ul>
+<example>
+set pList(1)=$Listbuild("MyTable","Campo1","Valor1")
+set pList(2)=$Listbuild("MyTable","Campo2","Valor2")
+set pList(3)=$Listbuild("MyTable","Campo3","Valor3")
+set pList(4)=$Listbuild("MyOtherTable","Campo","Valor")
+set pList = 4
+do myClass.AddLookupTable(pList)
+</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pList,pReplace:%Boolean=1</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    Set template = "%1.%2"
+    Try {
+        For i=1:1:pList
+		{
+            Set item = ##class(%Library.MessageDictionary).FormatText(template, $List(pList(i),1),$List( pList(i),2))
+            If (pReplace)
+        {
+                Do ##class(Ens.Util.LookupTable).%UpdateValue($List( pList(i),1),$List( pList(i),2),$List( pList(i),3),1)
+                Write !,"Created lookup "_item
+            }
+            Else {
+                Set columnaTabla = ##class(Ens.Util.FunctionSet).Lookup($List( pList(i),1),$ZConvert($List( pList(i),2), "U"),"", 0)
+                If columnaTabla=""
+                {
+                    Do ##class(Ens.Util.LookupTable).%UpdateValue($List( pList(i),1),$List( pList(i),2),$List( pList(i),3),1)
+                    Write !,"Created lookup "_item
+                }
+                Else{
+                    Write !,"LookUp "_item_" already exists"
+                }
+                Kill columnaTabla
+            }
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="RemoveLookupTable">
+<Description><![CDATA[
+Remove a value of a lookup table.
+<ul>
+<li><var>pList</var> List of values to remove. Each item should be a <b>$Listbuild</b> that include:</li>
+<ul>
+<li>Table</li>
+<li>Field</li>
+</ul>
+</ul>
+<example>
+set pList(1)=$Listbuild("MyTable","Campo1")
+set pList(2)=$Listbuild("MyTable","Campo2")
+set pList(3)=$Listbuild("MyTable","Campo3")
+set pList(4)=$Listbuild("MyOtherTable","Campo")
+set pList = 4
+do myClass.RemoveLookupTable(pList)
+</example>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pList</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    Try {
+        For i=1:1:pList
+		{
+            Do ##class(Ens.Util.LookupTable).%RemoveValue($List( pList(i),1),$List( pList(i),2))
+            Write !,"Removed Lookup "_$List( pList(i),1)_"."_$List( pList(i),2)
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+    Quit ret
+]]></Implementation>
+</Method>
+
+<Method name="AddTask">
+<Description>
+Add a schedule task</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pProperties:St.Tools.Task.Properties</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    Set ret = $$$OK
+    Try {
+        set existe = 0
+        if pProperties.NameSpace = "" set pProperties.NameSpace = $NAMESPACE
+        &sql(SELECT COUNT(1) INTO :existe FROM %SYS.Task WHERE TaskClass=:pProperties.TaskClass AND Name = :pProperties.Name AND NameSpace = :pProperties.NameSpace)
+        if existe = 0
+        {
+            // Add the task
+            set task = ##class(%SYS.Task).%New()
+            set task.Name = pProperties.Name
+            set task.Description = pProperties.Description
+            set task.NameSpace = pProperties.NameSpace
+            set task.TimePeriod = pProperties.Period
+            set task.TimePeriodEvery = pProperties.TimePeriodEvery
+            set task.TimePeriodDay = pProperties.TimePeriodDay
+
+            set task.DailyFrequency = pProperties.DailyFrequency
+            set task.DailyFrequencyTime = pProperties.DailyFrequencyTime
+            set task.DailyIncrement = pProperties.DailyIncrement
+            set task.DailyStartTime = pProperties.DailyStartTime
+            set task.DailyEndTime = pProperties.DailyEndTime
+
+            set task.RunAfterGUID = pProperties.Guid
+
+            set taskDef = $CLASSMETHOD(pProperties.TaskClass,"%New")
+            do task.AssignSettings(taskDef)
+            set task.TaskClass = pProperties.TaskClass
+            
+            set task.Settings = pProperties.Settings
+            $$$ThrowOnError(task.%Save())
+        }
+    }
+    Catch ex {
+        Set ret = ex.AsStatus()
+        Write !,"Error #",$System.Status.GetErrorCodes(ret),!
+        Write !,$System.Status.GetOneStatusText(ret,1),!
+    }
+    Quit ret
+]]></Implementation>
+</Method>
+</Class>
+
+
+<Class name="St.Tools.Task.AbstractEnum">
+<Abstract>1</Abstract>
+<TimeChanged>66508,69162.741498</TimeChanged>
+<TimeCreated>66508,69162.741498</TimeCreated>
+
+<Method name="BuildValueList">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+   Set valueList = ","_..GetValuesOfParametersString()
+   Return valueList
+]]></Implementation>
+</Method>
+
+<Method name="BuildDisplayList">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+   Set displayList = ","_..GetParametersString()
+   Return displayList
+]]></Implementation>
+</Method>
+
+<Method name="GetValuesOfParameters">
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+   Set parametersList = ..GetParameters()
+   Set valueList= $lb("")
+   For i=1:1:$LISTLENGTH(parametersList){
+      Set value = $PARAMETER($CLASSNAME(),$LIST(parametersList,i))
+      Set $LIST(valueList,i) = value
+   }
+   Return valueList
+]]></Implementation>
+</Method>
+
+<Method name="GetParameters">
+<ClassMethod>1</ClassMethod>
+<CodeMode>objectgenerator</CodeMode>
+<Implementation><![CDATA[
+   Set parametersClass=""
+   For i=1:1:%class.Parameters.Count(){
+      Set parametersClass=parametersClass_$LISTBUILD(%class.Parameters.GetAt(i).Name)
+   }
+   Do %code.WriteLine($char(9)_"Return """_parametersClass_"""")
+]]></Implementation>
+</Method>
+
+<Method name="GetParametersString">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[   Return $listtostring(..GetParameters())
+]]></Implementation>
+</Method>
+
+<Method name="GetValuesOfParametersString">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[   Return $listtostring(..GetValuesOfParameters())
+]]></Implementation>
+</Method>
+</Class>
+
+
+<Class name="St.Tools.Task.Item.DailyFrequency">
+<Description>
+Valores de la frecuencia diaria</Description>
+<Super>St.Tools.Task.AbstractEnum</Super>
+<TimeChanged>66508,69160.877046</TimeChanged>
+<TimeCreated>66508,69160.877046</TimeCreated>
+
+<Parameter name="Once">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="Several">
+<Default>1</Default>
+</Parameter>
+</Class>
+
+
+<Class name="St.Tools.Task.Item.DailyFrequencyTime">
+<Description>
+Valores de tiempo de frecuencia diaria</Description>
+<Super>St.Tools.Task.AbstractEnum</Super>
+<TimeChanged>66508,69166.08734</TimeChanged>
+<TimeCreated>66508,69166.08734</TimeCreated>
+
+<Parameter name="Minutes">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="Hours">
+<Default>1</Default>
+</Parameter>
+</Class>
+
+
+<Class name="St.Tools.Task.Item.Period">
+<Description>
+Valores de los items de periodos</Description>
+<Super>St.Tools.Task.AbstractEnum</Super>
+<TimeChanged>66508,69167.216198</TimeChanged>
+<TimeCreated>66508,69167.216198</TimeCreated>
+
+<Parameter name="Daily">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="Weekly">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="Monthly">
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="MonthlySpecial">
+<Default>3</Default>
+</Parameter>
+
+<Parameter name="RunAfter">
+<Default>4</Default>
+</Parameter>
+
+<Parameter name="OnDemand">
+<Default>5</Default>
+</Parameter>
+</Class>
+
+
+<Class name="St.Tools.Task.Properties">
+<Super>%SerialObject</Super>
+<TimeChanged>66508,69173.540916</TimeChanged>
+<TimeCreated>66508,69173.540916</TimeCreated>
+
+<Property name="Name">
+<Description>
+Task Name</Description>
+<Type>%String</Type>
+<Required>1</Required>
+<Parameter name="MAXLEN" value="100"/>
+</Property>
+
+<Property name="Description">
+<Description>
+Task Description</Description>
+<Type>%String</Type>
+<Parameter name="MAXLEN"/>
+</Property>
+
+<Property name="NameSpace">
+<Description>
+NameSpace name</Description>
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="100"/>
+</Property>
+
+<Property name="TaskClass">
+<Description>
+Task class name</Description>
+<Type>%String</Type>
+<Required>1</Required>
+<Parameter name="MAXLEN"/>
+</Property>
+
+<Property name="Period">
+<Description>
+Type of period</Description>
+<Type>St.Tools.Task.Type.Period</Type>
+<Required>1</Required>
+</Property>
+
+<Property name="DailyFrequency">
+<Description>
+Daily Frequency</Description>
+<Type>St.Tools.Task.Type.DailyFrequency</Type>
+</Property>
+
+<Property name="DailyFrequencyTime">
+<Description>
+Daily Frequency time</Description>
+<Type>St.Tools.Task.Type.DailyFrequencyTime</Type>
+</Property>
+
+<Property name="DailyIncrement">
+<Description>
+Incremento según definido como DailyFrequencyTime (en minutos o en horas)</Description>
+<Type>%Integer</Type>
+</Property>
+
+<Property name="DailyStartTime">
+<Description>
+Init datetime to start task</Description>
+<Type>%TimeStamp</Type>
+</Property>
+
+<Property name="DailyEndTime">
+<Description>
+End datetime to stop task</Description>
+<Type>%TimeStamp</Type>
+</Property>
+
+<Property name="TimePeriodEvery">
+<Description><![CDATA[
+Frequency of run task according to Period
+<li>DAILY: Run each x days, 1-7</li>
+<li>WEEKLY: Run each x weeks, 1-5</li>
+<li>MONTHLY: Run each x months, 1-12</li>
+<li>MONTHLYSPECIAL: Run each x months, 1-12</li>
+<li>RUNAFTER: Not used </li>
+<li>ONDEMAND: Not used</li>]]></Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="TimePeriodDay">
+<Description><![CDATA[
+Day of run task according to Period
+<li>DAILY: No used</li>
+<li>WEEKLY: Day of run task (1: Sunday, 7: Saturday, 234: Monday, Tuesday and Wednesday)</li>
+<li>MONTHLY: pTimePeriodEvery: Ejecución cada x meses, 1-12 / TimePeriodDay = días de ejecución, 1-31</li>
+<li>MONTHLYSPECIAL: pTimePeriodEvery: Ejecución cada x meses, 1-12 / TimePeriodDay = semana^dia (semana 1-5 / dia: 1-7 domingo: 1)</li>
+<li>RUNAFTER: (Se ejecutará después de ejecutarse otra tarea) pTimePeriodEvery: (no usado) / TimePeriodDay: 0 / Guid: Identificador de la tarea a observar </li>
+<li>ONDEMAND: pTimePeriodEvery: Ignorado / TimePeriodDay = Ignorado</li>]]></Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="Guid">
+<Description>
+Guid to identify task to run after</Description>
+<Type>%String</Type>
+<Parameter name="MAXLEN"/>
+</Property>
+
+<Property name="Settings">
+<Description>
+Settings of task</Description>
+<Type>%String</Type>
+<Parameter name="MAXLEN"/>
+</Property>
+
+<Storage name="Default">
+<Type>%Storage.Serial</Type>
+<State>PropertiesState</State>
+<StreamLocation>^St.Tools.Task.PropertiesS</StreamLocation>
+<Data name="PropertiesState">
+<Value name="1">
+<Value>Name</Value>
+</Value>
+<Value name="2">
+<Value>Description</Value>
+</Value>
+<Value name="3">
+<Value>NameSpace</Value>
+</Value>
+<Value name="4">
+<Value>TaskClass</Value>
+</Value>
+<Value name="5">
+<Value>Period</Value>
+</Value>
+<Value name="6">
+<Value>DailyFrequency</Value>
+</Value>
+<Value name="7">
+<Value>DailyFrequencyTime</Value>
+</Value>
+<Value name="8">
+<Value>DailyIncrement</Value>
+</Value>
+<Value name="9">
+<Value>DailyStartTime</Value>
+</Value>
+<Value name="10">
+<Value>DailyEndTime</Value>
+</Value>
+<Value name="11">
+<Value>TimePeriodEvery</Value>
+</Value>
+<Value name="12">
+<Value>TimePeriodDay</Value>
+</Value>
+<Value name="13">
+<Value>Guid</Value>
+</Value>
+<Value name="14">
+<Value>Settings</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+
+
+<Class name="St.Tools.Task.Type.DailyFrequency">
+<ClassType>datatype</ClassType>
+<Super>%Integer</Super>
+<TimeChanged>66508,69169.705553</TimeChanged>
+<TimeCreated>66508,69169.705553</TimeCreated>
+<DependsOn>St.Tools.Task.Item.DailyFrequency</DependsOn>
+
+<Parameter name="DISPLAYLIST">
+<Expression>##class(St.Tools.Task.Item.DailyFrequency).BuildDisplayList()</Expression>
+</Parameter>
+
+<Parameter name="VALUELIST">
+<Expression>##class(St.Tools.Task.Item.DailyFrequency).BuildValueList()</Expression>
+</Parameter>
+</Class>
+
+
+<Class name="St.Tools.Task.Type.DailyFrequencyTime">
+<ClassType>datatype</ClassType>
+<Super>%Integer</Super>
+<TimeChanged>66508,69170.848613</TimeChanged>
+<TimeCreated>66508,69170.848613</TimeCreated>
+<DependsOn>St.Tools.Task.Item.DailyFrequencyTime</DependsOn>
+
+<Parameter name="DISPLAYLIST">
+<Expression>##class(St.Tools.Task.Item.DailyFrequencyTime).BuildDisplayList()</Expression>
+</Parameter>
+
+<Parameter name="VALUELIST">
+<Expression>##class(St.Tools.Task.Item.DailyFrequencyTime).BuildValueList()</Expression>
+</Parameter>
+</Class>
+
+
+<Class name="St.Tools.Task.Type.Period">
+<ClassType>datatype</ClassType>
+<Super>%Integer</Super>
+<TimeChanged>66508,69172.141595</TimeChanged>
+<TimeCreated>66508,69172.141595</TimeCreated>
+<DependsOn>St.Tools.Task.Item.Period</DependsOn>
+
+<Parameter name="DISPLAYLIST">
+<Expression>##class(St.Tools.Task.Item.Period).BuildDisplayList()</Expression>
+</Parameter>
+
+<Parameter name="VALUELIST">
+<Expression>##class(St.Tools.Task.Item.Period).BuildValueList()</Expression>
+</Parameter>
+</Class>
+</Export>
