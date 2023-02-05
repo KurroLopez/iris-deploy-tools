@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="26" zv="IRIS for Windows (x86-64) 2021.1 (Build 215U)" ts="2023-02-05 17:40:55">
+<Class name="demo.Installer">
+<Description>
+an example of Installer class just to create a new clear namespace and database IRISAPP</Description>
+<Super>St.Tools.Deploy</Super>
+<TimeChanged>66510,63597.953483</TimeChanged>
+<TimeCreated>66510,61562.052767</TimeCreated>
+
+<Parameter name="PRODUCTION">
+<Default>MySolution.Production</Default>
+</Parameter>
+
+<Method name="setupInit">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+  // Now we going to deploy some items into the new namespace
+  do ..AddItem(,"SalesMetrics","MySolution.SalesMetrics")
+  
+  // Create a duplicate item disabled
+  do ..AddItem(,"SalesMetricsDuplicate","MySolution.SalesMetrics",,0)
+
+  // Add some values into Default properties
+  // Default values for SalesMetricsDuplicate
+  Do ..AddDefaultSetting(,"SalesMetricsDuplicate",,"AlertOnError","1")
+  // Default values for all items with MySolution.SalesMetrics class
+  Do ..AddDefaultSetting(,,"MySolution.SalesMetrics","AlertGroups","SalesErrorGroup")
+
+  // Add a lookup table with values
+  set itemCount = 0
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","Red","255,0,0")
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","Blue","0,0,255")
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","Green","0,255,0")
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","Black","0,1,0")  // With a mistake
+  set pList($Increment(itemCount))=$Listbuild("RgbColor","White","255,255,255")  // Table name wrong
+  set pList = itemCount
+  do ..AddLookupTable(.pList)
+
+  quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="setupFix">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+  // Remove duplicate itedisabled
+  do ..RemoveItem(,"SalesMetricsDuplicate")
+
+  // Remove default setting 
+  Do ..RemoveDefaultSetting(,"SalesMetricsDuplicate",,"AlertOnError")
+  
+  // Fix lookup table mistake
+  set itemCount = 0
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","Black","0,0,0")
+  set pList($Increment(itemCount))=$Listbuild("RgbColors","White","255,255,255")
+  set pList = itemCount
+  do ..AddLookupTable(.pList)
+  kill pList, itemCount
+  set itemCount = 0
+  set pList($Increment(itemCount))=$Listbuild("RgbColor","White")
+  set pList = itemCount
+  do ..RemoveLookupTable(.pList)
+
+  quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

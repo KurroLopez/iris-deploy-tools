@@ -109,7 +109,7 @@ set pList($Increment(itemCount))=$Listbuild("MyTable","Campo2","Valor2")
 set pList($Increment(itemCount))=$Listbuild("MyTable","Campo3","Valor3")
 set pList($Increment(itemCount))=$Listbuild("MyOtherTable","Campo","Valor")
 set pList = itemCount
-do ..AddLookupTable(pList)
+do ..AddLookupTable(.pList)
 
 ```
 
@@ -123,7 +123,7 @@ set pList($Increment(itemCount))=$Listbuild("MyTable","Campo2")
 set pList($Increment(itemCount))=$Listbuild("MyTable","Campo3")
 set pList($Increment(itemCount))=$Listbuild("MyOtherTable","Campo")
 set pList = itemCount
-do ..RemoveLookupTable(pList)
+do ..RemoveLookupTable(.pList)
 
 ```
 
@@ -184,14 +184,15 @@ docker-compose up -d --build
 You get a fresh IRIS image with an empty production running
 ![](img1.JPG)
 
-This is the core of the well-known Saels demon from ENSDEMO.
+This is the core of the well-known Sales demon from ENSDEMO.
 <http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
 But nothing to see yet.  
 Also not in the Dashboard.
 <http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard>
 
 Next we add the Business Service.  
-From console run:  
+
+## From console run:  
 
 ```
 
@@ -220,3 +221,89 @@ And it delivers input to the Dashboard.
 <http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard>
 
 It is up to you to proced with your own code.
+
+## From install class
+
+```
+
+$iris-deploy-tools>docker-compose exec iris iris session iris
+
+Node: 5a7e5bcc8f12, Instance: IRIS
+USER>do ##class(demo.Installer).setupInit()
+
+Installing SalesMetrics
+16:44:05.878:Ens.Director: RestartProduction initiated.
+16:44:05.879:Ens.Director: StopProduction initiated.
+16:44:05.880:Ens.Director: Production 'MySolution.Production' stopped.
+16:44:05.886:Ens.Director: Production 'MySolution.Production' starting...
+16:44:05.905:Ens.Director: Production 'MySolution.Production' started.
+16:44:05.905:Ens.Director: RestartProduction complete.
+Item SalesMetrics installed.
+Installing SalesMetricsDuplicate
+16:44:05.906:Ens.Director: RestartProduction initiated.
+16:44:05.907:Ens.Director: StopProduction initiated.
+16:44:05.908:Ens.Director: Production 'MySolution.Production' stopped.
+16:44:05.909:Ens.Director: Production 'MySolution.Production' starting...
+16:44:05.927:Ens.Director: Production 'MySolution.Production' started.
+16:44:05.928:Ens.Director: RestartProduction complete.
+Item SalesMetricsDuplicate installed.
+Create new config MySolution.Production||SalesMetricsDuplicate||*||AlertOnError
+Create new config MySolution.Production||*||MySolution.SalesMetrics||AlertGroups
+Created lookup RgbColors.Red
+Created lookup RgbColors.Blue
+Created lookup RgbColors.Green
+Created lookup RgbColors.Black
+Created lookup RgbColor.White
+USER>
+
+```
+
+and now reload your production view  
+<http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
+![](ProductionSetupInit.JPG)
+
+Also you can check the lookup table
+
+![](LookupTableSetupInit.JPG)
+
+Default Setting
+
+![](DefaultSetupInit.JPG)
+
+![](DefaultAppySetupInit.JPG)
+
+Now, run the install fix to remove the duplicated item, configuration and lookup table error
+
+```
+
+$iris-deploy-tools>docker-compose exec iris iris session iris
+
+Node: 5a7e5bcc8f12, Instance: IRIS
+USER>do ##class(demo.Installer).setupFix()
+
+Removing SalesMetricsDuplicate
+16:54:07.520:Ens.Director: RestartProduction initiated.
+16:54:07.521:Ens.Director: StopProduction initiated.
+16:54:07.522:Ens.Director: Production 'MySolution.Production' stopped.
+16:54:07.523:Ens.Director: Production 'MySolution.Production' starting...
+16:54:07.543:Ens.Director: Production 'MySolution.Production' started.
+16:54:07.543:Ens.Director: RestartProduction complete.
+Item SalesMetricsDuplicate removed
+Created lookup RgbColors.Black
+Created lookup RgbColors.White
+Removed Lookup RgbColor.White
+USER>
+
+```
+
+and now reload your production view  
+<http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
+![](ProductionSetupFix.JPG)
+
+Also you can check the lookup table
+
+![](LookupTableSetupFix.JPG)
+
+Default Setting
+
+![](DefaultSetupFix.JPG)
