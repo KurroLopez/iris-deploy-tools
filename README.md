@@ -164,26 +164,37 @@ set ret = ..AddTask(task, .idTask)
 /// As it is the first time it is installed, we run the task for the first time
 Do $SYSTEM.Task.RunNow(idTask)
 ```
-## Docker Demo
-#### Prerequisites
-Make sure you have [Docker desktop](https://www.docker.com/products/docker-desktop) installed.  
-#### Installation 
-From your GitHub download directory build and run the IRIS container with your project: 
-```
-docker-compose up -d --build
-```
-You get a fresh IRIS image with an empty production running   
-![](img1.JPG)   
 
-This is the core of the well-known Saels demon from ENSDEMO.   
-http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production
+## Docker Demo
+
+#### Prerequisites
+
+Make sure you have [Docker desktop](https://www.docker.com/products/docker-desktop) installed.  
+
+#### Installation
+
+From your GitHub download directory build and run the IRIS container with your project:
+
+```
+
+docker-compose up -d --build
+
+```
+
+You get a fresh IRIS image with an empty production running
+![](img1.JPG)
+
+This is the core of the well-known Saels demon from ENSDEMO.
+<http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
 But nothing to see yet.  
-Also not in the Dashboard.    
-http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard
+Also not in the Dashboard.
+<http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard>
 
 Next we add the Business Service.  
 From console run:  
+
 ```
+
 $iris-deploy-tools>docker-compose exec iris iris session iris
 
 Node: 5a7e5bcc8f12, Instance: IRIS
@@ -199,13 +210,13 @@ Installing SalesMetrics
 Item SalesMetrics installed.
 USER>
 ```
+
 and now reload your production view  
-http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production
+<http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
 ![](img2.JPG)
-Now ew have a business service  
-And it delvers input to the Dashboard. 
+Now we have a business service  
+And it delivers input to the Dashboard.
 ![](img3.JPG)
-http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard   
+<http://localhost:42773/csp/user/_DeepSee.UserPortal.DashboardViewer.zen?DASHBOARD=Sales%20Dashboard.dashboard>
 
 It is up to you to proced with your own code.
-
