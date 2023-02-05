@@ -192,7 +192,7 @@ Also not in the Dashboard.
 
 Next we add the Business Service.  
 
-## From console run:  
+## From console run  
 
 ```
 
@@ -260,17 +260,17 @@ USER>
 
 and now reload your production view  
 <http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
-![](ProductionSetupInit.JPG)
+![Production SetupInit](ProductionSetupInit.JPG)
 
 Also you can check the lookup table
 
-![](LookupTableSetupInit.JPG)
+![Lookup table SetupInit](LookupTableSetupInit.JPG)
 
 Default Setting
 
-![](DefaultSetupInit.JPG)
+![Default setting SetupInit](DefaultSetupInit.JPG)
 
-![](DefaultAppySetupInit.JPG)
+![Default setting apply SetupInit](DefaultAppySetupInit.JPG)
 
 Now, run the install fix to remove the duplicated item, configuration and lookup table error
 
@@ -298,12 +298,12 @@ USER>
 
 and now reload your production view  
 <http://localhost:42773/csp/user/EnsPortal.ProductionConfig.zen?PRODUCTION=MySolution.Production>
-![](ProductionSetupFix.JPG)
+![Production SetupFix](ProductionSetupFix.JPG)
 
 Also you can check the lookup table
 
-![](LookupTableSetupFix.JPG)
+![Lookup table SetupFix](LookupTableSetupFix.JPG)
 
 Default Setting
 
-![](DefaultSetupFix.JPG)
+![Default setting SetupFix](DefaultSetupFix.JPG)
