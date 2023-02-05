@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="26" zv="IRIS for UNIX (Ubuntu Server LTS for x86-64 Containers) 2022.3 (Build 599U)" ts="2023-02-05 00:03:35">
+<Class name="MySolution.SalesMetrics">
+<Description>
+This is a sample of a a Business Metric class;
+It defines a set of Business Metric properties (aka Key Performance Indicators)
+and provides the code to periodically calculate their values.
+These metrics can then be displayed within an Ensemble Dashboard.</Description>
+<ClassType/>
+<ProcedureBlock>1</ProcedureBlock>
+<Super>Ens.BusinessMetric</Super>
+<TimeChanged>66509,83311.9560452</TimeChanged>
+<TimeCreated>66509,83311.9560452</TimeCreated>
+
+<Property name="Sales">
+<Description>
+This reports recent sales (in dollars) for a given product</Description>
+<Type>Ens.DataType.Metric</Type>
+<MultiDimensional>1</MultiDimensional>
+<Parameter name="AUTOHISTORY" value="10"/>
+<Parameter name="RANGELOWER" value="0"/>
+<Parameter name="RANGEUPPER" value="100"/>
+<Parameter name="UNITS" value="Dollars"/>
+</Property>
+
+<Property name="Units">
+<Description>
+This reports recent sales (in units sold) for a given product</Description>
+<Type>Ens.DataType.Metric</Type>
+<MultiDimensional>1</MultiDimensional>
+<Parameter name="AUTOHISTORY" value="10"/>
+<Parameter name="RANGELOWER" value="0"/>
+<Parameter name="RANGEUPPER" value="100"/>
+<Parameter name="UNITS" value="Units"/>
+</Property>
+
+<Property name="Backlog">
+<Description>
+Recent backlog for current product</Description>
+<Type>Ens.DataType.Metric</Type>
+<Parameter name="RANGELOWER" value="0"/>
+<Parameter name="RANGEUPPER" value="10"/>
+<Parameter name="UNITS" value="Days"/>
+</Property>
+
+<Property name="TotalSales">
+<Description>
+This reports total sales since start of the demo.</Description>
+<Type>Ens.DataType.Metric</Type>
+<Parameter name="RANGELOWER" value="0"/>
+<Parameter name="RANGEUPPER" value="10000"/>
+<Parameter name="UNITS" value="Dollars"/>
+</Property>
+
+<Property name="TotalUnits">
+<Description>
+This reports total units sold since start of the demo.</Description>
+<Type>Ens.DataType.Metric</Type>
+<Parameter name="RANGELOWER" value="0"/>
+<Parameter name="RANGEUPPER" value="10000"/>
+<Parameter name="UNITS" value="Units"/>
+</Property>
+
+<Property name="News">
+<Description>
+This reports some random news displayed in order to display it
+within a tickertape feed.</Description>
+<Type>Ens.DataType.Metric</Type>
+</Property>
+
+<Method name="OnCalculateMetrics">
+<Description>
+This method is called periodically, for each instance (product in this case)
+in order to update the various metric values.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	// randomly get number of sales since last time
+	Set ..Sales = $Random(50) + $Random(50)
+	Set ..Units = $Random(5) + $Random(5)
+
+	Set ..TotalSales = ..TotalSales + ..Sales
+	Set ..TotalUnits = ..TotalUnits + ..Units
+	
+	Set ..Backlog = $Random(10)
+
+	// make up some news
+	If ((..%Instance = "Apples") && ($Random(100) > 75)) {
+		Set tList1 = $LB("Rates are","Futures are","Prices are","Demand is")
+		Set tList2 = $LB("up","down","level")
+		Set ..News = $LG(tList1,$Random($LL(tList1))+1) _ " " _ $LG(tList2,$Random($LL(tList2))+1) _ "."
+	}
+
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnGetInstances">
+<Description>
+This method returns a list of instances for this Business Metric;
+in this case, every instance represents a specific product</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&pInstSet:%String]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	Set pInstSet(1) = "Apples"
+	Set pInstSet(2) = "Bananas"
+	Set pInstSet(3) = "Cherries"
+	Set pInstSet(4) = "Dates"
+	Set pInstSet(5) = "Eggplants"
+	Set pInstSet(6) = "Figs"
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>
