@@ -1,0 +1,10 @@
+zn "%SYS"
+Do ##class(Security.Users).UnExpireUserPasswords("*")
+set prop("DeepSeeEnabled")=1
+do ##class(Security.Applications).Modify("/csp/user",.prop)
+zn "USER"
+zpm "load /opt/irisbuild/ -v":1
+do $system.OBJ.LoadDir("/opt/irisbuild/src/demo","ck")
+do ##class(Ens.Director).SetAutoStart("MySolution.Production")
+hang 2
+halt

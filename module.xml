@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+  <Document name="iris-deploy-tools.ZPM">
+    <Module>
+      <Name>iris-deploy-tools</Name>
+	  <Description>deploy your production in  IRIS or Ensemble</Description> 
+      <Version>0.0.1</Version>
+      <Packaging>module</Packaging>
+      <SourcesRoot>src</SourcesRoot>
+      <Resource Name="St.PKG"/>
+    </Module>
+  </Document>
+</Export>
